@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Helmet Detection Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      max-width: 1050px;
+      width: 100%;
+    }
+    .video-card, .stats-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    .video-card img {
+      width: 100%;
+      border-radius: 10px;
+      display: block;
+      background: #000;
+    }
+    .stat-box {
+      background: #0f172a;
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      border-left: 4px solid #38bdf8;
+    }
+    .stat-box.safe { border-left-color: #22c55e; }
+    .stat-box.danger { border-left-color: #ef4444; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; margin-top: 4px; }
+    .alert-banner {
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 700;
+      background: #166534;
+      color: #dcfce7;
+    }
+    .alert-banner.violation {
+      background: #991b1b;
+      color: #fee2e2;
+    }
+  </style>
+</head>
+<body>
+
+  <h2 style="margin-bottom: 20px;">Real-Time Helmet Detection System</h2>
+
+  <div class="dashboard">
+    <!-- Live Video Stream from Raspberry Pi -->
+    <div class="video-card">
+      <img id="pi-stream" src="http://raspberrypi.local:5000/video_feed" alt="Connecting to Raspberry Pi Camera..." />
+    </div>
+
+    <!-- Live Detection Telemetry -->
+    <div class="stats-card">
+      <h3 style="margin-top: 0;">Live Telemetry</h3>
+      
+      <div class="stat-box safe">
+        <div>With Helmet</div>
+        <div class="stat-value" id="with-count">0</div>
+      </div>
+
+      <div class="stat-box danger">
+        <div>Without Helmet</div>
+        <div class="stat-value" id="without-count">0</div>
+      </div>
+
+      <div class="stat-box">
+        <div>AI / Stream Speed</div>
+        <div class="stat-value" id="fps-readout">-- FPS</div>
+      </div>
+
+      <div id="status-banner" class="alert-banner">STATUS: COMPLIANT</div>
+    </div>
+  </div>
+
+  <script>
+    const PI_HOST = "http://raspberrypi.local:5000"; // Or use http://192.168.43.28:5000
+
+    async function updateStatus() {
+      try {
+        const res = await fetch(`${PI_HOST}/status`);
+        const data = await res.json();
+        document.getElementById("with-count").textContent = data.with_helmet;
+        document.getElementById("without-count").textContent = data.without_helmet;
+        document.getElementById("fps-readout").textContent = `${data.detect_fps} AI / ${data.stream_fps} Vid`;
+
+        const banner = document.getElementById("status-banner");
+        if (data.alert) {
+          banner.textContent = "⚠️ HELMET VIOLATION DETECTED";
+          banner.classList.add("violation");
+        } else {
+          banner.textContent = "✓ STATUS: COMPLIANT";
+          banner.classList.remove("violation");
+        }
+      } catch (e) {
+        // Waiting for server
+      }
+    }
+    setInterval(updateStatus, 500);
+  </script>
+</body>
+</html>
